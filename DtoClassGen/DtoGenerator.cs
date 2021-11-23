@@ -1,9 +1,11 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace DtoClassGen
 {
@@ -14,6 +16,9 @@ namespace DtoClassGen
         {
 
             var synatxTrees = context.Compilation.SyntaxTrees;
+
+            string pattern = @"^(?=\[)(.*)(?<=\])";
+            Regex rg = new Regex(pattern);
 
             foreach (var sytaxTree in synatxTrees)
             {
@@ -36,6 +41,7 @@ namespace DtoClassGen
                    
                     var newmappableTypeDeclaration = mappableTypeDeclaration.RemoveNodes(ignoreProperties, SyntaxRemoveOptions.KeepEndOfLine);
 
+
                     var spliClass = newmappableTypeDeclaration.ToString().Split(new[] { '{' }, 2);
 
                     sourceBuilder.Append($@"
@@ -45,9 +51,37 @@ namespace GeneratedMappers
     {{
 ");
 
-                    sourceBuilder.AppendLine(spliClass[1].Replace(className, genClassName));
-                    sourceBuilder.AppendLine("}");
+                    foreach (MemberDeclarationSyntax memberDeclaration in newmappableTypeDeclaration.Members)
+                    {
+                        var modifiedMember = memberDeclaration.ToString();
+                        var prop = memberDeclaration as PropertyDeclarationSyntax;
+                        string oldName = prop.Identifier.ToString();
 
+                        if (modifiedMember.StartsWith("[MapModelPropertyName(")) {
+                            List<AttributeListSyntax> attributeLists = memberDeclaration?.AttributeLists.ToList();
+                            foreach (AttributeListSyntax attributeList in attributeLists)
+                            {
+                                var attributes = attributeList?.Attributes.ToList();
+                                foreach (AttributeSyntax attribute in attributes)
+                                {
+                                    if (attribute.ArgumentList != null) {
+                                        string newName = (attribute?.ArgumentList).Arguments.ToString().Replace("\"","");
+                                        modifiedMember = modifiedMember.Replace(oldName, newName);
+                                        modifiedMember = rg.Replace(modifiedMember, "");
+                                    }
+                                      
+                                }
+                            }
+                        }
+                        sourceBuilder.AppendLine($"\t\t{modifiedMember}");
+
+                    }
+
+                    
+                    sourceBuilder.AppendLine(@" }
+}");
+
+                    //sourceBuilder.AppendLine(spliClass[1].Replace(className, genClassName));
 
                     //context.AddSource($"{className}Dto", SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));
 

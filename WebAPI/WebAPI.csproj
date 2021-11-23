@@ -9,7 +9,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\DtoClassGen\DtoClassGen.csproj" />
+	  <ProjectReference Include="..\DtoClassGen\DtoClassGen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Generated\" />
 	</ItemGroup>
 
 
