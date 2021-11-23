@@ -1,7 +1,7 @@
 ﻿using SourceGenSampleAPI.Attributes;
 using System;
 
-namespace SourceGenSampleAPI.Models
+namespace SourceGenAPI.Models
 {
     [MapModel]
     public class Employee
